@@ -2,8 +2,8 @@ package plugins.danyfel80.surfmethod;
 
 import java.util.List;
 
-import algorithms.features.surf.SURFFeature;
-import algorithms.features.surf.SURFFeatureDetection;
+import algorithms.danyfel80.features.surf.SURFFeature;
+import algorithms.danyfel80.features.surf.SURFFeaturesDetection;
 import plugins.adufour.blocks.lang.Block;
 import plugins.adufour.blocks.util.VarList;
 import plugins.adufour.ezplug.EzGroup;
@@ -12,13 +12,19 @@ import plugins.adufour.ezplug.EzVarBoolean;
 import plugins.adufour.ezplug.EzVarInteger;
 import plugins.adufour.ezplug.EzVarSequence;
 import plugins.adufour.vars.lang.Var;
-import plugins.danyfel80.surfmethod.overlay.SURFFeatureOverlay;
+import plugins.danyfel80.surfmethod.overlay.SURFFeaturesOverlay;
 import icy.gui.dialog.MessageDialog;
 import icy.sequence.Sequence;
 import icy.sequence.SequenceUtil;
 import icy.type.DataType;
 
-public class SURFMethod extends EzPlug implements Block{
+/**
+ * The SUFR Features extraction plugin. Based on the c++ version developed by
+ * Edouard Oyallon and Julien Rabin (available at 
+ * http://dx.doi.org/10.5201/ipol.2015.69)
+ * @author Daniel Felipe Gonzalez Obando
+ */
+public class SURFFeaturesExtraction extends EzPlug implements Block{
 
   // Static Variables
   private static final Integer DEFAULT_THRESHOLD = 1000; 
@@ -44,7 +50,7 @@ public class SURFMethod extends EzPlug implements Block{
     
     inSequence = new EzVarSequence("Target sequence (a 2D image)");
     inSequence.setToolTipText("The image to extract keypoints and descriptors from.");
-    inHThreshold = new EzVarInteger("Hessian Threshold", 1000, 100, 3000, 10);
+    inHThreshold = new EzVarInteger("Hessian Threshold", 1000, 1, 50000, 10);
     inHThreshold.setToolTipText("The threshold for the detection of the Hessian.");
     inHThreshold.setOptional(true);
     EzGroup paramsGroup = new EzGroup("Parameters", inSequence, inHThreshold);
@@ -86,14 +92,15 @@ public class SURFMethod extends EzPlug implements Block{
     
     
     long startTime = System.nanoTime();
-    SURFFeatureDetection featureDetection = new SURFFeatureDetection(seq, threshold);
-    features = featureDetection.getFeatures();
+    SURFFeaturesDetection featureDetection = new SURFFeaturesDetection(seq, threshold);
+    features = featureDetection.findFeatures();
 
     long endTime = System.nanoTime();
     
     if (inAddOverlay.getValue()) {
-      SURFFeatureOverlay overlay = new SURFFeatureOverlay(features);
-      seq.addOverlay(overlay);
+      SURFFeaturesOverlay overlay = new SURFFeaturesOverlay(features);
+      System.out.println("overlay added with " + features.size() + " features");
+      inSequence.getValue().addOverlay(overlay);
     }
     
     System.out.println("SURF Method has finished in " + ((endTime - startTime)/1000000) + " milliseconds.");

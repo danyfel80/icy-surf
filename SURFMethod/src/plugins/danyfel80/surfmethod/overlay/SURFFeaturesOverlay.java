@@ -12,21 +12,21 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.List;
 
-import algorithms.features.surf.KeyPoint;
-import algorithms.features.surf.SURFFeature;
+import algorithms.danyfel80.features.surf.KeyPoint;
+import algorithms.danyfel80.features.surf.SURFFeature;
 
 /**
  * SURF Feature Overlay
  * @author Daniel Felipe Gonzalez Obando
  */
-public class SURFFeatureOverlay extends Overlay {
+public class SURFFeaturesOverlay extends Overlay {
   private List<SURFFeature> features;
   
-  private SURFFeatureOverlay() {
+  private SURFFeaturesOverlay() {
     super("SURF features");
   }
   
-  public SURFFeatureOverlay(List<SURFFeature> features) {
+  public SURFFeaturesOverlay(List<SURFFeature> features) {
     super("SURF features");
     this.features = features;
   }
@@ -46,8 +46,10 @@ public class SURFFeatureOverlay extends Overlay {
             (int)(fkp.getY() - fkp.getScale())+1,
             (int)(2*fkp.getScale()), (int)(2*fkp.getScale()));
         
-        int x2 = (int) (fkp.getX() + (fkp.getScale() * Math.cos(fkp.getOrientation())));
-        int y2 = (int) (fkp.getY() + (fkp.getScale() * Math.sin(fkp.getOrientation())));
+        int dx = (int)(fkp.getScale() * Math.cos(fkp.getOrientation()));
+        int dy = (int)(fkp.getScale() * Math.sin(fkp.getOrientation()));
+        int x2 = (int)fkp.getX() + (fkp.isSignLaplacian()? dx: -dx);
+        int y2 = (int)fkp.getY() + (fkp.isSignLaplacian()? dy: -dy);
         
         g.drawLine((int)fkp.getX(), (int)fkp.getY(), x2, y2);
       }
