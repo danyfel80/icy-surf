@@ -2,21 +2,21 @@ package plugins.danyfel80.surfmethod;
 
 import java.util.List;
 
-import algorithms.danyfel80.features.surf.SURFFeature;
-import algorithms.danyfel80.features.surf.SURFFeaturesDetection;
+import algorithms.danyfel80.features.surf.Descriptor;
+import algorithms.danyfel80.features.surf.SURFDescriptorsDetection;
+import icy.gui.dialog.MessageDialog;
+import icy.sequence.Sequence;
+import icy.sequence.SequenceUtil;
+import icy.type.DataType;
 import plugins.adufour.blocks.lang.Block;
 import plugins.adufour.blocks.util.VarList;
 import plugins.adufour.ezplug.EzGroup;
 import plugins.adufour.ezplug.EzPlug;
 import plugins.adufour.ezplug.EzVarBoolean;
-import plugins.adufour.ezplug.EzVarInteger;
+import plugins.adufour.ezplug.EzVarDouble;
 import plugins.adufour.ezplug.EzVarSequence;
 import plugins.adufour.vars.lang.Var;
-import plugins.danyfel80.surfmethod.overlay.SURFFeaturesOverlay;
-import icy.gui.dialog.MessageDialog;
-import icy.sequence.Sequence;
-import icy.sequence.SequenceUtil;
-import icy.type.DataType;
+import plugins.danyfel80.surfmethod.overlay.SURFDescriptorsOverlay;
 
 /**
  * The SUFR Features extraction plugin. Based on the c++ version developed by
@@ -24,10 +24,10 @@ import icy.type.DataType;
  * http://dx.doi.org/10.5201/ipol.2015.69)
  * @author Daniel Felipe Gonzalez Obando
  */
-public class SURFFeaturesExtraction extends EzPlug implements Block{
+public class SURFDescriptorsExtraction extends EzPlug implements Block{
 
   // Static Variables
-  private static final Integer DEFAULT_THRESHOLD = 1000; 
+  private static final double DEFAULT_THRESHOLD = 1000; 
   
   
   // Input Variables
@@ -38,7 +38,7 @@ public class SURFFeaturesExtraction extends EzPlug implements Block{
   /**
    * The threshold for the detection of the Hessian.
    */
-  private EzVarInteger inHThreshold;
+  private EzVarDouble inHThreshold;
   /**
    * If true an overlay with the keypoints will be shown in the input image.
    */
@@ -50,7 +50,7 @@ public class SURFFeaturesExtraction extends EzPlug implements Block{
     
     inSequence = new EzVarSequence("Target sequence (a 2D image)");
     inSequence.setToolTipText("The image to extract keypoints and descriptors from.");
-    inHThreshold = new EzVarInteger("Hessian Threshold", 1000, 1, 50000, 10);
+    inHThreshold = new EzVarDouble("Hessian Threshold", 1000, 1, 10000000, 10);
     inHThreshold.setToolTipText("The threshold for the detection of the Hessian.");
     inHThreshold.setOptional(true);
     EzGroup paramsGroup = new EzGroup("Parameters", inSequence, inHThreshold);
@@ -65,11 +65,11 @@ public class SURFFeaturesExtraction extends EzPlug implements Block{
 
   // Internal variables
   private Sequence seq;
-  private Integer threshold;
+  private double threshold;
   /**
    * The found features.
    */
-  private List<SURFFeature> features;
+  private List<Descriptor> features;
   
   @Override
   protected void execute() {
@@ -92,13 +92,13 @@ public class SURFFeaturesExtraction extends EzPlug implements Block{
     
     
     long startTime = System.nanoTime();
-    SURFFeaturesDetection featureDetection = new SURFFeaturesDetection(seq, threshold);
-    features = featureDetection.findFeatures();
+    SURFDescriptorsDetection featureDetection = new SURFDescriptorsDetection(seq, threshold);
+    features = featureDetection.findDescriptors();
 
     long endTime = System.nanoTime();
     
     if (inAddOverlay.getValue()) {
-      SURFFeaturesOverlay overlay = new SURFFeaturesOverlay(features);
+      SURFDescriptorsOverlay overlay = new SURFDescriptorsOverlay(features);
       System.out.println("overlay added with " + features.size() + " features");
       inSequence.getValue().addOverlay(overlay);
     }
@@ -118,10 +118,10 @@ public class SURFFeaturesExtraction extends EzPlug implements Block{
     inputMap.add(inAddOverlay.name, inAddOverlay.getVariable());
   }
 
-  Var<List<SURFFeature>> outFeatures;
+  Var<List<Descriptor>> outFeatures;
   @Override
   public void declareOutput(VarList outputMap) {
-    outFeatures = new Var<List<SURFFeature>>("Features", features);
+    outFeatures = new Var<List<Descriptor>>("Features", features);
     outFeatures.setValue(features);
     outputMap.add(outFeatures.getName(), outFeatures);
   }

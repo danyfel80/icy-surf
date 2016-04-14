@@ -4,8 +4,6 @@ import java.util.List;
 
 import javax.vecmath.Point3d;
 
-import icy.sequence.Sequence;
-
 /**
  * This class represents a key point found with the surf method
  * @author Daniel Felipe Gonzalez Obando
@@ -75,10 +73,13 @@ public class KeyPoint {
    * @param sign The laplacian sign of the feature at the key point in the integral sequence.
    * @param scale The scale at which the key point was detected.
    */
-  public static void addKeyPoint(Sequence intSeq, double i, double j, boolean sign,
-      double scale, List<SURFFeature> features) {
-    KeyPoint pt = new KeyPoint(i, j, scale, getOrientation(intSeq, i, j, SURFMethodUtils.ANGULAR_REGIONS, scale), sign);
-    features.add(new SURFFeature(pt, null));
+  public static void addKeyPoint(IntegralSequence intSeq, double i, double j, boolean sign,
+      double scale, List<Descriptor> features) {
+    KeyPoint pt = new KeyPoint(
+        i, j, scale, 
+        getOrientation(intSeq, (int)Math.round(i), (int)Math.round(j), SURFMethodUtils.ANGULAR_REGIONS, scale), 
+        sign);
+    features.add(new Descriptor(pt, null));
   }
   
   /**
@@ -90,14 +91,14 @@ public class KeyPoint {
    * @param scale The scale at which the key point was found.
    * @return The orientation of the key point.
    */
-  public static double getOrientation(Sequence intSeq, double x, double y,
+  public static double getOrientation(IntegralSequence intSeq, int x, int y,
       int sectors, double scale) {
 
     double[] haarResponseX = new double[sectors];
     double[] haarResponseY = new double[sectors];
     double[] haarResponseSectorX = new double[sectors];
     double[] haarResponseSectorY = new double[sectors];
-    int answerX,answerY;
+    long answerX,answerY;
     double gauss;
 
     int theta;
@@ -108,12 +109,12 @@ public class KeyPoint {
         if( i*i + j*j <= 36  ) 
         {
 
-          answerX = IntegralSequenceUtil.haarX(intSeq, (int)(x+scale*i), (int)(y+scale*j), (int)(Math.round(2*scale)));
-          answerY = IntegralSequenceUtil.haarY(intSeq, (int)(x+scale*i), (int)(y+scale*j), (int)(Math.round(2*scale)));
+          answerX = intSeq.haarX(x + (int)(i*scale), y + (int)(j*scale), (int)Math.round(2.0*scale));
+          answerY = intSeq.haarY(x + (int)(i*scale), y + (int)(j*scale), (int)Math.round(2.0*scale));
 
           // Associated angle
           theta = (int) (Math.atan2(answerY, answerX)*sectors/(2.0*Math.PI)); 
-          theta = (theta >= 0)? theta: (theta+sectors);
+          theta = (theta >= 0)? theta: (theta + sectors);
 
           // Gaussian weight
           gauss = SURFMethodUtils.gaussian(i, j, 2);
@@ -151,7 +152,7 @@ public class KeyPoint {
     for(int i = 1; i < sectors; i++) {
       double norm = haarResponseX[i]*haarResponseX[i] + haarResponseY[i]*haarResponseY[i];
       t = (max < norm)? i: t;
-      max = (max<norm)? norm: max;
+      max = (max < norm)? norm: max;
     }
 
 
@@ -172,43 +173,40 @@ public class KeyPoint {
    * @param octave The octave at which the point is processed.
    * @return True if the point is stable with the given interpolation parameters.
    */
-  public static boolean interpolationScaleSpace(List<Sequence> hessian, int x, int y,
+  public static boolean interpolationScaleSpace(List<RegularSequence> hessian, int x, int y,
       int i, Point3d coord, int sample, int octave) {
-    Sequence hs = hessian.get(i);
-    double[] hsData = hs.getDataXYAsDouble(0, 0, 0);
+    RegularSequence hs = hessian.get(i);
     // If we are outside the image...
     if(x <= 0 || y <= 0 || x >= hs.getWidth() - 2 || y >= hs.getHeight() - 2)
       return false;
 
     double mx,my,mi,dx,dy,di,dxx,dyy,dii,dxy,dxi,dyi;
-    Sequence hsPrev = hessian.get(i-1);
-    double[] hsPrevData = hsPrev.getDataXYAsDouble(0, 0, 0);
-    Sequence hsNext = hessian.get(i+1);
-    double[] hsNextData = hsNext.getDataXYAsDouble(0, 0, 0);
-
+    RegularSequence hsPrev = hessian.get(i-1);
+    RegularSequence hsNext = hessian.get(i+1);
+    
     // Nabla X
-    dx=((hsData[(x + 1) + y*hs.getWidth()] - hsData[(x - 1) + y*hs.getWidth()])/2.0);
-    dy=((hsData[x + (y + 1)*hs.getWidth()] - hsData[x + (y - 1)*hs.getWidth()])/2.0);
-    di=((hsData[x + y*hs.getWidth()] - hsData[x + y*hs.getWidth()])/2.0);
+    dx=((hs.getValue(x + 1, y) - hs.getValue(x - 1, y))/2.0);
+    dy=((hs.getValue(x, y + 1) - hs.getValue(x, y - 1))/2.0);
+    di=((hs.getValue(x, y) - hs.getValue(x, y))/2.0);
 
     // Hessian X
-    double a = hsData[x + y*hs.getWidth()];
-    dxx = hsData[(x + 1) + y*hs.getWidth()] + hsData[(x - 1) + y*hs.getWidth()] - 2.0*a;
-    dyy = hsData[x + (y + 1)*hs.getWidth()] + hsData[x + (y + 1)*hs.getWidth()] - 2.0*a;
-    dii = hsPrevData[x + y*hsPrev.getWidth()] + hsNextData[x + y*hsNext.getWidth()] - 2.0*a;
+    double a = hs.getValue(x, y);
+    dxx = hs.getValue(x + 1, y) + hs.getValue(x - 1, y) - 2.0*a;
+    dyy = hs.getValue(x, y + 1) + hs.getValue(x, y + 1) - 2.0*a;
+    dii = hsPrev.getValue(x, y) + hsNext.getValue(x, y) - 2.0*a;
 
-    dxy = (hsData[(x + 1) + (y + 1)*hs.getWidth()] - 
-        hsData[(x + 1) + (y - 1)*hs.getWidth()] - 
-        hsData[(x - 1) + (y + 1)*hs.getWidth()] +
-        hsData[(x - 1) + (y - 1)*hs.getWidth()])/4.0;
-    dxi = (hsNextData[(x + 1) + y*hsNext.getWidth()] - 
-        hsNextData[(x - 1) + y*hsNext.getWidth()] - 
-        hsPrevData[(x + 1) + y*hsPrev.getWidth()] +
-        hsPrevData[(x - 1) + y*hsPrev.getWidth()])/4.0;
-    dyi=(hsNextData[x + (y + 1)*hsNext.getWidth()] - 
-        hsNextData[x + (y - 1)*hsNext.getWidth()] - 
-        hsPrevData[x + (y + 1)*hsPrev.getWidth()] + 
-        hsPrevData[x + (y - 1)*hsPrev.getWidth()])/4.0;
+    dxy = (hs.getValue(x + 1, y + 1) - 
+        hs.getValue(x + 1, y - 1) - 
+        hs.getValue(x - 1, y + 1) +
+        hs.getValue(x - 1, y - 1))/4.0;
+    dxi = (hsNext.getValue(x + 1, y) - 
+        hsNext.getValue(x - 1, y) - 
+        hsPrev.getValue(x + 1, y) +
+        hsPrev.getValue(x - 1, y))/4.0;
+    dyi = (hsNext.getValue(x, y + 1) - 
+        hsNext.getValue(x, y - 1) - 
+        hsPrev.getValue(x, y + 1) + 
+        hsPrev.getValue(x, y - 1))/4.0;
 
     // Det
     double det = dxx*dyy*dii - dxx*dyi*dyi - dyy*dxi*dxi + 2*dxi*dyi*dxy - dii*dxy*dxy;
@@ -243,29 +241,20 @@ public class KeyPoint {
    * @param scale
    * @return
    */
-  public static boolean isMaximum(List<Sequence> imageStamp, int x, int y, int scale, int threshold) {
-    Sequence iStp = imageStamp.get(scale);
-    double[] iStpData = iStp.getDataXYAsDouble(0, 0, 0);
-    int sizeX = iStp.getSizeX();
-    
-    Sequence iStpPrev = imageStamp.get(scale-1);
-    double[] iStpPrevData = iStpPrev.getDataXYAsDouble(0, 0, 0);
-    int sizeXPrev = iStpPrev.getSizeX();
-    
-    Sequence iStpNext = imageStamp.get(scale+1);
-    double[] iStpNextData = iStpNext.getDataXYAsDouble(0, 0, 0);
-    int sizeXNext = iStpNext.getSizeX();
+  public static boolean isMaximum(List<RegularSequence> imageStamp, int x, int y, int scale, double threshold) {
+    RegularSequence iStp = imageStamp.get(scale);
+    RegularSequence iStpPrev = imageStamp.get(scale-1);
+    RegularSequence iStpNext = imageStamp.get(scale+1);
 
-    double tmp = iStpData[x + y*sizeX];
-    //System.out.println(tmp);
+    double tmp = iStp.getValue(x, y);
     if (tmp > threshold) {
       for (int j = -1 + y; j < 2 + y; j++) {
         for (int i = -1 + x; i < 2 + x; i++) {
-          if (iStpPrevData[i + j*sizeXPrev] >= tmp)
+          if (iStpPrev.getValue(i, j) >= tmp)
             return false;
-          if (iStpNextData[i + j*sizeXNext] >= tmp)
+          if (iStpNext.getValue(i, j) >= tmp)
             return false;
-          if ((x != i || y != j) && iStpData[i + j*sizeX] >= tmp) 
+          if ((x != i || y != j) && iStp.getValue(i, j) >= tmp) 
             return false;
         }
       }
