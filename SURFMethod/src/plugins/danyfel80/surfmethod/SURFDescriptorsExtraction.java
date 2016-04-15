@@ -83,10 +83,15 @@ public class SURFDescriptorsExtraction extends EzPlug implements Block{
       MessageDialog.showDialog("Dimension Error", "Please choose a sequence with only one slice.", MessageDialog.ERROR_MESSAGE);
       return;
     }
+    
     if (seq.getSizeC() > 1) {
       seq = SequenceUtil.toGray(seq);
     }
-    seq = SequenceUtil.convertToType(seq, DataType.DOUBLE, false);
+    if (seq.getDataType_() != DataType.DOUBLE) {
+      seq = SequenceUtil.convertToType(seq, DataType.DOUBLE, false);
+    }
+    
+    addSequence(seq);
     
     threshold = (inHThreshold.isEnabled())? inHThreshold.getValue(): DEFAULT_THRESHOLD;
     

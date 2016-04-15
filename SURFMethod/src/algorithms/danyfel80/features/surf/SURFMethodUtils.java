@@ -27,6 +27,10 @@ public class SURFMethodUtils {
    * Descriptor size
    */
   public static final int DESCRIPTOR_SIZE = 4;
+  /**
+   * Ratio between two matches
+   */
+  public static final float RATE = 0.6f;
 
   /**
    * Performs the gaussian with the given coordinate and sigma values.

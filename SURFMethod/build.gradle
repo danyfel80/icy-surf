@@ -7,7 +7,7 @@ repositories {
 
 dependencies {
   //compile 'org.jgrapht:jgrapht-core:0.9.1'
-  //compile 'org.javatuples:javatuples:1.2'
+  compile 'org.javatuples:javatuples:1.2'
 }
 
 eclipse {
