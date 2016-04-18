@@ -169,7 +169,7 @@ public class SURFSequenceMatch extends EzPlug implements Block {
     matches = matcher.getMatches();
     endTime = System.nanoTime();
     System.out.println("Found " + matches.size() + " matches.");
-    if (inAddOverlay.getValue()) {
+    //if (inAddOverlay.getValue()) {
       for (int i = 0; i < matcher.getMatches().size(); i++) {
         Descriptor d1 = matches.get(i).getValue0();
         Descriptor d2 = matches.get(i).getValue1();
@@ -184,7 +184,7 @@ public class SURFSequenceMatch extends EzPlug implements Block {
         inSequence1.getValue().addROI(r1);
         inSequence2.getValue().addROI(r2);
       }
-    }
+    //}
 
     System.out.println("Matches computed in has finished in "
         + ((endTime - startTime1) / 1000000) + " msec.");
