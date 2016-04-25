@@ -139,12 +139,7 @@ public class SURFSequenceMatch extends EzPlug implements Block {
 
 		long endTime = System.nanoTime();
 
-		if (inAddOverlay.getValue()) {
-			SURFDescriptorsOverlay overlay1 = new SURFDescriptorsOverlay(descriptors1);
-			inSequence1.getValue().addOverlay(overlay1);
-			SURFDescriptorsOverlay overlay2 = new SURFDescriptorsOverlay(descriptors2);
-			inSequence2.getValue().addOverlay(overlay2);
-		}
+		
 		System.out.println("Found " + descriptors1.size() + " descriptors in sequence 1.");
 		System.out.println("Found " + descriptors2.size() + " descriptors in sequence 2.");
 		System.out.println("Descriptors computed in has finished in " + ((endTime - startTime) / 1000000) + " msecs.");
@@ -155,7 +150,19 @@ public class SURFSequenceMatch extends EzPlug implements Block {
 		matcher.matchDescriptors();
 		matches = matcher.getMatches();
 		endTime = System.nanoTime();
+		
 		System.out.println("Found " + matches.size() + " matches.");
+		System.out.println("Matches computed in has finished in " + ((endTime - startTime1) / 1000000) + " msec.");
+		System.out.println("SURF Method has finished in " + ((endTime - startTime) / 1000000) + " msec.");
+		
+		if (inAddOverlay.getValue()) {
+			SURFDescriptorsOverlay overlay1 = new SURFDescriptorsOverlay(descriptors1);
+			inSequence1.getValue().addOverlay(overlay1);
+			SURFDescriptorsOverlay overlay2 = new SURFDescriptorsOverlay(descriptors2);
+			inSequence2.getValue().addOverlay(overlay2);
+		}
+		
+		
 		// if (inAddOverlay.getValue()) {
 		for (int i = 0; i < matcher.getMatches().size(); i++) {
 			Descriptor d1 = matches.get(i).getValue0();
@@ -171,8 +178,7 @@ public class SURFSequenceMatch extends EzPlug implements Block {
 		}
 		// }
 
-		System.out.println("Matches computed in has finished in " + ((endTime - startTime1) / 1000000) + " msec.");
-		System.out.println("SURF Method has finished in " + ((endTime - startTime) / 1000000) + " msec.");
+		
 	}
 
 	/*
